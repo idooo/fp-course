@@ -31,9 +31,7 @@ import qualified Numeric as N
 -- BEGIN Helper functions and data types
 
 -- The custom list type
-data List t =
-  Nil
-  | t :. List t
+data List t = Nil | t :. List t
   deriving (Eq, Ord)
 
 -- Right-associative
@@ -43,8 +41,7 @@ instance Show t => Show (List t) where
   show = show . foldRight (:) []
 
 -- The list of integers from zero to infinity.
-infinity ::
-  List Integer
+infinity :: List Integer
 infinity =
   let inf x = x :. inf (x+1)
   in inf 0
@@ -71,12 +68,10 @@ foldLeft f b (h :. t) = let b' = f b h in b' `seq` foldLeft f b' t
 -- prop> \x -> x `headOr` infinity == 0
 --
 -- prop> \x -> x `headOr` Nil == x
-headOr ::
-  a
-  -> List a
-  -> a
-headOr =
-  error "todo: Course.List#headOr"
+headOr :: a -> List a -> a
+headOr = \defaultValue -> \list -> case list of
+  (h :. _) -> h
+  Nil -> defaultValue
 
 -- | The product of the elements of a list.
 --
@@ -88,11 +83,8 @@ headOr =
 --
 -- >>> product (1 :. 2 :. 3 :. 4 :. Nil)
 -- 24
-product ::
-  List Int
-  -> Int
-product =
-  error "todo: Course.List#product"
+product :: List Int -> Int
+product = \list -> foldRight (*) 1 list
 
 -- | Sum the elements of the list.
 --
@@ -103,11 +95,8 @@ product =
 -- 10
 --
 -- prop> \x -> foldLeft (-) (sum x) x == 0
-sum ::
-  List Int
-  -> Int
-sum =
-  error "todo: Course.List#sum"
+sum :: List Int -> Int
+sum = \list -> foldRight (+) 0 list
 
 -- | Return the length of the list.
 --
@@ -115,11 +104,9 @@ sum =
 -- 3
 --
 -- prop> \x -> sum (map (const 1) x) == length x
-length ::
-  List a
-  -> Int
-length =
-  error "todo: Course.List#length"
+length :: List a -> Int
+length = foldLeft (const . ((+) 1)) 0
+--length = foldLeft (\x -> const (x + 1)) 0
 
 -- | Map the given function on each element of the list.
 --
@@ -129,12 +116,8 @@ length =
 -- prop> \x -> headOr x (map (+1) infinity) == 1
 --
 -- prop> \x -> map id x == x
-map ::
-  (a -> b)
-  -> List a
-  -> List b
-map =
-  error "todo: Course.List#map"
+map :: (a -> b) -> List a -> List b
+map = \f -> foldRight (\x y -> (f x) :. y ) Nil
 
 -- | Return elements satisfying the given predicate.
 --
@@ -146,12 +129,9 @@ map =
 -- prop> \x -> filter (const True) x == x
 --
 -- prop> \x -> filter (const False) x == Nil
-filter ::
-  (a -> Bool)
-  -> List a
-  -> List a
-filter =
-  error "todo: Course.List#filter"
+filter :: (a -> Bool) -> List a -> List a
+filter = \f -> foldRight (\x y -> if (f x) then (x :. y) else y) Nil
+
 
 -- | Append two lists to a new list.
 --
@@ -165,12 +145,8 @@ filter =
 -- prop> \x -> (x ++ y) ++ z == x ++ (y ++ z)
 --
 -- prop> \x -> x ++ Nil == x
-(++) ::
-  List a
-  -> List a
-  -> List a
-(++) =
-  error "todo: Course.List#(++)"
+(++) :: List a -> List a -> List a
+(++) = \l1 -> \l2 -> foldRight (\x y -> x :. y) l2 l1
 
 infixr 5 ++
 
@@ -184,11 +160,8 @@ infixr 5 ++
 -- prop> \x -> headOr x (flatten (y :. infinity :. Nil)) == headOr 0 y
 --
 -- prop> \x -> sum (map length x) == length (flatten x)
-flatten ::
-  List (List a)
-  -> List a
-flatten =
-  error "todo: Course.List#flatten"
+flatten :: List (List a) -> List a
+flatten = foldRight (\x y -> x ++ y) Nil
 
 -- | Map a function then flatten to a list.
 --
@@ -200,22 +173,15 @@ flatten =
 -- prop> \x -> headOr x (flatMap id (y :. infinity :. Nil)) == headOr 0 y
 --
 -- prop> \x -> flatMap id (x :: List (List Int)) == flatten x
-flatMap ::
-  (a -> List b)
-  -> List a
-  -> List b
-flatMap =
-  error "todo: Course.List#flatMap"
+flatMap :: (a -> List b) -> List a -> List b
+flatMap = \f -> \list -> foldRight (\x y -> (f x) ++ y) Nil list
 
 -- | Flatten a list of lists to a list (again).
 -- HOWEVER, this time use the /flatMap/ function that you just wrote.
 --
 -- prop> \x -> let types = x :: List (List Int) in flatten x == flattenAgain x
-flattenAgain ::
-  List (List a)
-  -> List a
-flattenAgain =
-  error "todo: Course.List#flattenAgain"
+flattenAgain :: List (List a) -> List a
+flattenAgain = \list -> flatMap (\a -> a) list
 
 -- | Convert a list of optional values to an optional list of values.
 --
@@ -239,11 +205,12 @@ flattenAgain =
 --
 -- >>> seqOptional (Empty :. map Full infinity)
 -- Empty
-seqOptional ::
-  List (Optional a)
-  -> Optional (List a)
-seqOptional =
-  error "todo: Course.List#seqOptional"
+--seqOptional :: List (Optional a) -> Optional (List a)
+--seqOptional = \list -> case list of
+--  Empty -> Empty
+--  (h :. t) ->
+
+
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -261,12 +228,10 @@ seqOptional =
 --
 -- >>> find (const True) infinity
 -- Full 0
-find ::
-  (a -> Bool)
-  -> List a
-  -> Optional a
-find =
-  error "todo: Course.List#find"
+find :: (a -> Bool) -> List a -> Optional a
+find = \f -> \list -> case list of
+  Nil -> Empty
+  (h :. t) -> if (f h) then Full h else find f t
 
 -- | Determine if the length of the given list is greater than 4.
 --
@@ -281,11 +246,12 @@ find =
 --
 -- >>> lengthGT4 infinity
 -- True
-lengthGT4 ::
-  List a
-  -> Bool
-lengthGT4 =
-  error "todo: Course.List#lengthGT4"
+--lengthGT4 :: List a -> Bool
+--lengthGT4 = \list -> case list of
+--  Nil -> False
+--  (h L)
+
+
 
 -- | Reverse a list.
 --
@@ -298,11 +264,8 @@ lengthGT4 =
 -- prop> \x -> let types = x :: List Int in reverse x ++ reverse y == reverse (y ++ x)
 --
 -- prop> \x -> let types = x :: Int in reverse (x :. Nil) == x :. Nil
-reverse ::
-  List a
-  -> List a
-reverse =
-  error "todo: Course.List#reverse"
+reverse :: List a -> List a
+reverse = foldLeft (\h t -> t :. h) Nil
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
