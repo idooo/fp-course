@@ -506,12 +506,19 @@ phoneParser = digit >>=
 -- >>> parse personParser "123  Fred   Clarkson    y     123-456.789#"
 -- Result >< Person 123 "Fred" "Clarkson" True "123-456.789"
 personParser :: Parser Person
-personParser = ageParser >>=
-  (\age -> spaces1 >>= (\_ -> firstNameParser >>=
-  (\firstName -> spaces1 >>= (\_ -> surnameParser >>=
-  (\surName -> spaces1 >>= (\_ -> smokerParser >>=
-  (\isSmoker -> spaces1 >>= (\_ -> phoneParser >>=
-  (\phone -> valueParser (Person age firstName surName isSmoker phone))))))))))
+personParser = ageParser >>=~
+  (\age -> firstNameParser >>=~
+  (\firstName -> surnameParser >>=~
+  (\surName -> smokerParser >>=~
+  (\isSmoker -> phoneParser >>=
+  (\phone -> valueParser (Person age firstName surName isSmoker phone))))))
+
+--personParser = ageParser >>=
+--  (\age -> spaces1 >>= (\_ -> firstNameParser >>=
+--  (\firstName -> spaces1 >>= (\_ -> surnameParser >>=
+--  (\surName -> spaces1 >>= (\_ -> smokerParser >>=
+--  (\isSmoker -> spaces1 >>= (\_ -> phoneParser >>=
+--  (\phone -> valueParser (Person age firstName surName isSmoker phone))))))))))
 
 -- Make sure all the tests pass!
 
@@ -519,12 +526,8 @@ personParser = ageParser >>=
 
 -- Did you repeat yourself in `personParser` ? This might help:
 
-(>>=~) ::
-  Parser a
-  -> (a -> Parser b)
-  -> Parser b
-(>>=~) p f =
-  (p <* spaces1) >>= f
+(>>=~) :: Parser a -> (a -> Parser b) -> Parser b
+(>>=~) p f = (p <* spaces1) >>= f
 
 infixl 1 >>=~
 
